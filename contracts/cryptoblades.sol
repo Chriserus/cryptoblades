@@ -145,7 +145,6 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
     }
 
     mapping(address => MintPayment) mintPayments;
-    mapping(uint => bytes32) historicalBlockHashes;
 
     event FightOutcome(address indexed owner, uint256 indexed character, uint256 weapon, uint32 target, uint24 playerRoll, uint24 enemyRoll, uint16 xpGain, uint256 skillGain);
     event InGameOnlyFundsGiven(address indexed to, uint256 skillAmount);
@@ -461,16 +460,12 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
         return (mintPayments[msg.sender].count == _num);
     }
 
-    function _recordPreviousBlockHash() private {
-        historicalBlockHashes[block.number-1] = blockhash(block.number-1);
-    }
-
-    modifier recordPreviousBlockHash() {
-        _recordPreviousBlockHash();
+    modifier updateBlockHashesModifier() {
+        randoms.updateBlockHashes();
         _;
     }
 
-    function payForMint(address nftAddress, uint count) public recordPreviousBlockHash() {
+    function payForMint(address nftAddress, uint count) public updateBlockHashesModifier {
         require(nftAddress == address(weapons));
         require(count == 1 || count == 10);
 
@@ -530,7 +525,7 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
         public
         onlyNonContract
         oncePerBlock(msg.sender)
-        recordPreviousBlockHash()
+        updateBlockHashesModifier
     {
         require(num > 0 && num <= 10);
         require(mintPayments[msg.sender].count == num, "count mismatch");
@@ -551,10 +546,8 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
         require(msg.sender == address(this));
 
         for (uint i = 0; i < num; i++) {
-            bytes32 hash = historicalBlockHashes[mintPayments[msg.sender].blockNumber];
-            if (hash == 0) {
-                hash = blockhash(block.number - 1);
-            }
+            bytes32 hash = randoms.getHistoricalBlockHashWithFallback(mintPayments[msg.sender].blockNumber);
+
             // Salt the hash with the unused payment count.
             hash = bytes32(uint256(hash) + mintPayments[msg.sender].count);
 
@@ -563,13 +556,11 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
         }
     }
 
-    function mintWeapon() public onlyNonContract oncePerBlock(msg.sender)  recordPreviousBlockHash() {
+    function mintWeapon() public onlyNonContract oncePerBlock(msg.sender) updateBlockHashesModifier {
         require(mintPayments[msg.sender].count == 1, "count mismatch");
 
-        bytes32 hash = historicalBlockHashes[mintPayments[msg.sender].blockNumber];
-        if (hash == 0) {
-            hash = blockhash(block.number - 1);
-        }
+        bytes32 hash = randoms.getHistoricalBlockHashWithFallback(mintPayments[msg.sender].blockNumber);
+
         // Salt the hash with the unused payment count.
         hash = bytes32(uint256(hash) + mintPayments[msg.sender].count);
 
