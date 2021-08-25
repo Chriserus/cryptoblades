@@ -23,6 +23,12 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
 
     bytes32 public constant GAME_ADMIN = keccak256("GAME_ADMIN");
 
+    // UNUSED; KEPT FOR UPGRADEABILITY PROXY COMPATIBILITY
+    uint256 public constant MINT_PAYMENT_TIMEOUT = 200;
+
+    // UNUSED; KEPT FOR UPGRADEABILITY PROXY COMPATIBILITY
+    uint256 public constant MINT_PAYMENT_RECLAIM_MINIMUM_WAIT_TIME = 3 hours;
+
     int128 public constant REWARDS_CLAIM_TAX_MAX = 2767011611056432742; // = ~0.15 = ~15%
     uint256 public constant REWARDS_CLAIM_TAX_DURATION = 15 days;
 
@@ -139,12 +145,33 @@ contract CryptoBlades is Initializable, AccessControlUpgradeable {
     Blacksmith public blacksmith;
 
     struct MintPayment {
+        // UNUSED; KEPT FOR UPGRADEABILITY PROXY COMPATIBILITY
+        bytes32 blockHash;
+
         uint256 blockNumber;
         address nftAddress;
         uint count;
     }
 
     mapping(address => MintPayment) mintPayments;
+
+    // UNUSED; KEPT FOR UPGRADEABILITY PROXY COMPATIBILITY
+    struct MintPaymentSkillDeposited {
+        uint256 skillDepositedFromWallet;
+        uint256 skillDepositedFromRewards;
+        uint256 skillDepositedFromIgo;
+
+        uint256 skillRefundableFromWallet;
+        uint256 skillRefundableFromRewards;
+        uint256 skillRefundableFromIgo;
+
+        uint256 refundClaimableTimestamp;
+    }
+
+    // UNUSED; KEPT FOR UPGRADEABILITY PROXY COMPATIBILITY
+    uint256 public totalMintPaymentSkillRefundable;
+    // UNUSED; KEPT FOR UPGRADEABILITY PROXY COMPATIBILITY
+    mapping(address => MintPaymentSkillDeposited) mintPaymentSkillDepositeds;
 
     event FightOutcome(address indexed owner, uint256 indexed character, uint256 weapon, uint32 target, uint24 playerRoll, uint24 enemyRoll, uint16 xpGain, uint256 skillGain);
     event InGameOnlyFundsGiven(address indexed to, uint256 skillAmount);
